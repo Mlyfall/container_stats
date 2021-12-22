@@ -1,0 +1,60 @@
+version: '3.8'
+
+networks:
+  net_kafka:
+    name: net_kafka
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.5.0
+    container_name: zookeeper
+    networks:
+      - net_kafka
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  broker:
+    image: confluentinc/cp-kafka:5.5.0
+    container_name: broker
+    networks:
+      - net_kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPIC: "test"
+
+  consumer:
+    image: ubuntu_test
+    container_name: consumer
+    depends_on:
+      - broker
+    networks:
+      - net_kafka
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Giving Kafka a bit of time to start up…'
+        sleep 30
+        # Run the client code
+        python3 /work/simple_consumer.py broker:9092
+
+  producer:
+    image: ubuntu_test
+    container_name: producer
+    depends_on:
+      - broker
+    networks:
+      - net_kafka
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Giving Kafka a bit of time to start up…'
+        sleep 30
+        # Run the client code
+        python3 /work/simple_producer.py broker:9092
