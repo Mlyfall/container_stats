@@ -1,7 +1,7 @@
 from confluent_kafka import Producer
 
 #input_file = open("/home/eschulze/angepasst-lid-ds-kafka-benchmark-master/Testdaten/test.csv")
-input_file = open("./test.csv")
+input_file = open("/work/test.csv")
 p = Producer({"bootstrap.servers": "broker:9092"})
 
 

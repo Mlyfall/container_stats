@@ -28,7 +28,7 @@ services:
       KAFKA_CREATE_TOPIC: "test"
 
   consumer:
-    image: ubuntu_test
+    image: test/test
     container_name: consumer
     depends_on:
       - broker
@@ -39,12 +39,12 @@ services:
       - -c
       - |
         echo 'Giving Kafka a bit of time to start up…'
-        sleep 30
+        sleep 20
         # Run the client code
-        python3 /work/simple_consumer.py broker:9092
+        python3 /work/simple_consumer.py
 
   producer:
-    image: ubuntu_test
+    image: test/test
     container_name: producer
     depends_on:
       - broker
@@ -55,6 +55,6 @@ services:
       - -c
       - |
         echo 'Giving Kafka a bit of time to start up…'
-        sleep 30
+        sleep 25
         # Run the client code
-        python3 /work/simple_producer.py broker:9092
+        python3 /work/simple_producer.py
