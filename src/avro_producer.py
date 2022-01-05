@@ -1,0 +1,1 @@
+https://github.com/skyrocknroll/python-kafka-avro-example/blob/master/avro-producer.py
