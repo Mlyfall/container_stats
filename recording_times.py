@@ -19,6 +19,7 @@ with open("src/test.csv", "r") as file:
             diff = int(line.split(" ")[0]) - previous
             if diff > max_diff:
                 max_diff = diff
+            previous = int(line.split(" ")[0])
 
     print(max_diff * 10 ** -9)
     print(counter)
