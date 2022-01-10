@@ -1,4 +1,5 @@
 from confluent_kafka import Producer
+import time
 
 #input_file = open("/home/eschulze/angepasst-lid-ds-kafka-benchmark-master/Testdaten/test.csv")
 input_file = open("/work/test.csv")
