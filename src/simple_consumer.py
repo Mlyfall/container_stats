@@ -19,5 +19,7 @@ while True:
         continue
 
     print('Received message: {}'.format(msg.value().decode('utf-8')))
+    # unix timestamp in ms
+    print(msg.timestamp())
 
 c.close()

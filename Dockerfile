@@ -8,6 +8,9 @@ RUN pip install confluent_kafka
 # Add script
 RUN mkdir /work
 ADD ./src /work
+WORKDIR /work
+RUN pip install -r requirements.txt
+RUN pip install -e .
 
 ENTRYPOINT ["python3"]
 

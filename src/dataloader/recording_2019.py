@@ -5,7 +5,7 @@ from dataloader.base_recording import BaseRecording
 
 from dataloader.direction import Direction
 from dataloader.syscall_2019 import Syscall, Syscall2019
-from dataloader.distutils.util import strtobool
+from distutils.util import strtobool
 
 from enum import IntEnum
 

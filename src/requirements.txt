@@ -1,3 +1,6 @@
 pytest~=6.2.5
 tqdm~=4.62.3
 docker~=5.0.3
+nest-asyncio==1.5.1
+pypcapkit~=0.15.5
+scapy~=2.4.4
