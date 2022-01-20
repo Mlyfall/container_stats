@@ -18,6 +18,7 @@ def delivery_report(err, msg):
 
 
 data_base_path = "../DS"
+
 scenario_names = os.listdir(data_base_path)
 
 for scenario in scenario_names:
@@ -34,3 +35,4 @@ for scenario in scenario_names:
                 p.produce("test", syscall.syscall_line.encode('utf-8'), callback=delivery_report)
     
     p.flush()
+

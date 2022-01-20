@@ -51,7 +51,7 @@ services:
     networks:
       - net_kafka
     volumes:
-      - /home/eschulze/LID-DS-2021-no-relative-time/:/DS/:ro
+      - /home/eschulze/Projects/LID-DS-2021-fixed-exploit-time/:/DS/:ro
     entrypoint:
       - bash
       - -c
