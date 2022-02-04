@@ -19,12 +19,12 @@ def delivery_report(err, msg):
 
 
 # data_base_path = "../DS"
-#data_base_path = "/home/eschulze/Projects/LID-DS-2021-fixed-exploit-time"
-#scenario_names = os.listdir(data_base_path)
-#scenario_path_example = os.path.join(data_base_path, scenario_names[0])
-test_path_marco = "/home/scadspc14/PycharmProjects/CVE-2017-7529"
+data_base_path = "/home/eschulze/Projects/LID-DS-2021-fixed-exploit-time"
+scenario_names = os.listdir(data_base_path)
+scenario_path_example = os.path.join(data_base_path, scenario_names[0])
+#test_path_marco = "/home/scadspc14/PycharmProjects/CVE-2017-7529"
 
-dataloader = dataloader_factory(test_path_marco, direction=Direction.BOTH)
+dataloader = dataloader_factory(data_base_path, direction=Direction.BOTH)
 data_type_list = iter([dataloader.training_data(), dataloader.validation_data(), dataloader.test_data()])
 recs_of_current_type = iter(next(data_type_list))
 syscalls_of_current_rec = next(recs_of_current_type).syscalls()
