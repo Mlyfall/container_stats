@@ -8,18 +8,18 @@ if __name__ == '__main__':
     # instantiate docker client
     client = docker.from_env()
     # build image for producer/consumer
-    #pc_image = client.images.build(dockerfile="/home/emmely/PycharmProjects/test/Dockerfile", tag="test/test") ????
+    #kafka_client_image = client.images.build(dockerfile="/home/emmely/PycharmProjects/test/Dockerfile", tag="kafka_client") ????
 
     # run producer and consumer
     producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
-    producer_entrypoint = "bash -c python3 /work/next.py"
-    producer = client.containers.run(image="test/test",
+    producer_entrypoint = "bash -c  python3 /work/next.py"
+    producer = client.containers.run(image="kafka_client",
                                      network="net_kafka",
                                      name="producer", volumes=producer_volume_database,
                                      entrypoint=producer_entrypoint)
 
     consumer_entrypoint = "bash -c python3 /work/simple_consumer.py"
-    consumer = client.containers.run(image="test/test",
+    consumer = client.containers.run(image="kafka_client",
                                      network="net_kafka",
                                      name="consumer",
                                      entrypoint=consumer_entrypoint)
