@@ -1,25 +1,30 @@
 import docker
 import time
 import csv
+from tqdm import tqdm
+from pprint import pprint
 
 # make sure broker and zookeeper are running using the compose file
 
 if __name__ == '__main__':
     # instantiate docker client
     client = docker.from_env()
+
     # build image for producer/consumer
     #kafka_client_image = client.images.build(dockerfile="/home/emmely/PycharmProjects/test/Dockerfile", tag="kafka_client") ????
 
     # run producer and consumer
     producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
-    producer_entrypoint = "bash -c  python3 /work/next.py"
-    producer = client.containers.run(image="kafka_client",
+    producer_entrypoint = "python3 /work/next.py"
+    producer = client.containers.run(detach=True,
+                                     image="kafka_client",
                                      network="net_kafka",
                                      name="producer", volumes=producer_volume_database,
                                      entrypoint=producer_entrypoint)
 
-    consumer_entrypoint = "bash -c python3 /work/simple_consumer.py"
-    consumer = client.containers.run(image="kafka_client",
+    consumer_entrypoint = "python3 /work/simple_consumer.py"
+    consumer = client.containers.run(detach=True,
+                                     image="kafka_client",
                                      network="net_kafka",
                                      name="consumer",
                                      entrypoint=consumer_entrypoint)
@@ -35,17 +40,17 @@ if __name__ == '__main__':
         writer.writerow(["transmitted data in bytes", "timestamp"])
 
         first_status = True
-        for stat in producer.stats(decode=True):
-            print(stat)
+        for stat in tqdm(producer.stats(decode=True)):
+
             if first_status is True:
-                transmitted_data = stat[network][tx_bytes]
+                transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
                 current_timestamp = time.time()
                 writer.writerow([transmitted_data, current_timestamp])
                 old_tx = transmitted_data
                 old_time = current_timestamp
                 first_status = False
             else:
-                transmitted_data = status[network][tx_bytes]
+                transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
                 current_timestamp = time.time()
                 if transmitted_data != old_tx:
                     writer.writerow([transmitted_data, current_timestamp])

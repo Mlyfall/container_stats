@@ -4,9 +4,8 @@ from dataloader.direction import Direction
 import os
 import time
 
-""""# create producer client
 configs = {"bootstrap.servers": "broker:9092"}
-p = Producer(configs)"""
+p = Producer(configs)
 
 
 def delivery_report(err, msg):
@@ -18,12 +17,12 @@ def delivery_report(err, msg):
         print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
 
-data_base_path = "../DS"
-#data_base_path = "/home/eschulze/Projects/LID-DS-2021-fixed-exploit-time"
+data_base_path = "/DS"
+#data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
 scenario_names = os.listdir(data_base_path)
 scenario_path_example = os.path.join(data_base_path, scenario_names[0])
 
-dataloader = dataloader_factory(data_base_path, direction=Direction.BOTH)
+dataloader = dataloader_factory(scenario_path_example, direction=Direction.BOTH)
 data_type_list = iter([dataloader.training_data(), dataloader.validation_data(), dataloader.test_data()])
 recs_of_current_type = iter(next(data_type_list))
 syscalls_of_current_rec = next(recs_of_current_type).syscalls()
@@ -55,12 +54,11 @@ while True:
                 current_timestamp = current_sys.timestamp_unix_in_ns()
 
     if len(syscall_batch) > 0:
-        print("hurray")
         for syscall in syscall_batch:
             print(syscall)
-            """p.poll(0)
-               p.produce("test", syscall.encode("utf-8"), callback=delivery_report)
-        p.flush()"""
+            p.poll(0)
+            p.produce("test", syscall.encode("utf-8"), callback=delivery_report)
+        p.flush()
 
     last_timestamp = current_timestamp
     t_0 = t_help
