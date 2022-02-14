@@ -26,28 +26,37 @@ def save_stats(container: docker.models.containers.Container, all_stats=False):
             for stat in tqdm(container.stats(decode=True)):
                 if counter_until_break <= number_stats_testing:
                     if first_status is True:
-                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                        current_timestamp = time.time()
-                        writer.writerow([transmitted_data, current_timestamp])
-                        old_tx = transmitted_data
-                        counter_until_break += 1
-                        first_status = False
-                    else:
-                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                        current_timestamp = time.time()
-                        counter_until_break += 1
-                        if transmitted_data != old_tx:
+                        try:
+                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                            current_timestamp = time.time()
                             writer.writerow([transmitted_data, current_timestamp])
+                            old_tx = transmitted_data
+                            counter_until_break += 1
+                            first_status = False
+                        except KeyError:
+                            break
+                    else:
+                        try:
+                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                            current_timestamp = time.time()
+                            counter_until_break += 1
+                            if transmitted_data != old_tx:
+                                writer.writerow([transmitted_data, current_timestamp])
+                        except KeyError:
+                            break
                 else:
                     break
 
         if all_stats is True:
             for stat in tqdm(container.stats(decode=True)):
                 if counter_until_break <= number_stats_testing:
-                    transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                    current_timestamp = time.time()
-                    writer.writerow([transmitted_data, current_timestamp])
-                    counter_until_break += 1
+                    try:
+                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                        current_timestamp = time.time()
+                        writer.writerow([transmitted_data, current_timestamp])
+                        counter_until_break += 1
+                    except KeyError:
+                        break
                 else:
                     break
 
