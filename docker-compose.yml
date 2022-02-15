@@ -26,37 +26,3 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CREATE_TOPIC: "test"
-
-  consumer:
-    image: test/test
-    container_name: consumer
-    depends_on:
-      - broker
-    networks:
-      - net_kafka
-    entrypoint:
-      - bash
-      - -c
-      - |
-        echo 'Giving Kafka a bit of time to start up…'
-        sleep 5
-        # Run the client code
-        python3 /work/simple_consumer.py
-
-  producer:
-    image: test/test
-    container_name: producer
-    depends_on:
-      - broker
-    networks:
-      - net_kafka
-    volumes:
-      - /home/eschulze/Projects/LID-DS-2021-fixed-exploit-time/:/DS/:ro
-    entrypoint:
-      - bash
-      - -c
-      - |
-        echo 'Giving Kafka a bit of time to start up…'
-        sleep 10
-        # Run the client code
-        python3 /work/dataloader_producer.py

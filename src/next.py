@@ -4,10 +4,6 @@ from dataloader.direction import Direction
 import os
 import time
 
-""""# create producer client
-configs = {"bootstrap.servers": "broker:9092"}
-p = Producer(configs)"""
-
 
 def delivery_report(err, msg):
     """ Called once for each message produced to indicate delivery result.
@@ -18,54 +14,86 @@ def delivery_report(err, msg):
         print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
 
-data_base_path = "../DS"
-#data_base_path = "/home/eschulze/Projects/LID-DS-2021-fixed-exploit-time"
-scenario_names = os.listdir(data_base_path)
-scenario_path_example = os.path.join(data_base_path, scenario_names[0])
+def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data_type_iterator):
+    """Returns the next syscall of the recording.
+       If end of recording is reached, continues with syscalls of subsequent recording,
+       analogous behaviour for end of data_type."""
 
-dataloader = dataloader_factory(data_base_path, direction=Direction.BOTH)
-data_type_list = iter([dataloader.training_data(), dataloader.validation_data(), dataloader.test_data()])
-recs_of_current_type = iter(next(data_type_list))
-syscalls_of_current_rec = next(recs_of_current_type).syscalls()
-current_sys = next(syscalls_of_current_rec)
-current_timestamp = current_sys.timestamp_unix_in_ns()
+    try:
+        next_syscall = next(syscalls_of_current_recording)
 
-t_0 = time.time_ns()
-last_timestamp = current_timestamp
-
-while True:
-    syscall_batch = []
-    t_help = time.time_ns()
-    t_delta = t_help - t_0
-
-    while current_timestamp <= t_delta + last_timestamp:
-        syscall_batch.append(current_sys.syscall_line)
+    except StopIteration:
         try:
-            current_sys = next(syscalls_of_current_rec)
-            current_timestamp = current_sys.timestamp_unix_in_ns()
+            syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
+            next_syscall = next(syscalls_of_current_recording)
+
         except StopIteration:
             try:
-                syscalls_of_current_rec = next(recs_of_current_type).syscalls()
-                current_sys = next(syscalls_of_current_rec)
-                current_timestamp = current_sys.timestamp_unix_in_ns()
+                recordings_of_current_type = iter(next(data_type_iterator))
+                syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
+                next_syscall = next(syscalls_of_current_recording)
+
             except StopIteration:
-                recs_of_current_type = iter(next(data_type_list))
-                syscalls_of_current_rec = next(recs_of_current_type).syscalls()
-                current_sys = next(syscalls_of_current_rec)
-                current_timestamp = current_sys.timestamp_unix_in_ns()
+                next_syscall = None
+
+    return next_syscall
+
+
+def send_batch_to_kafka(syscall_batch):
+    """Checks for the batch to be non-empty and sends each syscall to broker."""
 
     if len(syscall_batch) > 0:
-        print("hurray")
         for syscall in syscall_batch:
             print(syscall)
-            """p.poll(0)
-               p.produce("test", syscall.encode("utf-8"), callback=delivery_report)
-        p.flush()"""
-
-    last_timestamp = current_timestamp
-    t_0 = t_help
+            p.poll(0)
+            p.produce("test", syscall.encode("utf-8"), callback=delivery_report)
+        p.flush()
 
 
+if __name__ == '__main__':
 
+    configs = {"bootstrap.servers": "broker:9092"}
+    p = Producer(configs)
 
+    # loading data
+    data_base_path = "/DS"
+    # data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
+    # scenario_names = os.listdir(data_base_path)
+    scenario_name = "CVE-2020-9484"
+    scenario_path_example = os.path.join(data_base_path, scenario_name)
+    dataloader = dataloader_factory(scenario_path_example, direction=Direction.BOTH)
 
+    # getting first syscall of scenario using next()
+    data_type_iterator = iter([dataloader.training_data(), dataloader.validation_data(), dataloader.test_data()])
+    recordings_of_current_type = iter(next(data_type_iterator))
+    syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
+    current_syscall = next(syscalls_of_current_recording)
+    timestamp_current_syscall = current_syscall.timestamp_unix_in_ns()
+
+    system_time_start = time.time_ns()
+    timestamp_last_syscall = timestamp_current_syscall
+
+    # generating syscall batches with more realistic timing taking computing time into account
+    while True:
+        syscall_batch = []
+        system_time_now = time.time_ns()
+        t_delta = system_time_now - system_time_start
+
+        # appending syscall batch list if its timestamp is within time interval
+        while timestamp_current_syscall <= t_delta + timestamp_last_syscall:
+            syscall_batch.append(current_syscall.syscall_line)
+
+            current_syscall = next_syscall(syscalls_of_current_recording,
+                                           recordings_of_current_type,
+                                           data_type_iterator)
+            if current_syscall is not None:
+                timestamp_current_syscall = current_syscall.timestamp_unix_in_ns()
+            else:
+                print("End of Scenario.")
+                break
+
+        send_batch_to_kafka(syscall_batch)
+
+        # setting new time variables for new batch loop
+        timestamp_last_syscall = timestamp_current_syscall
+        system_time_start = system_time_now
