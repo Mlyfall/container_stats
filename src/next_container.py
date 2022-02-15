@@ -15,28 +15,32 @@ def delivery_report(err, msg):
 
 
 def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data_type_iterator):
-    """Returns the next syscall of the recording.
+    """Returns the next syscall of the recording, the next recording, the next datatype and stop flag.
        If end of recording is reached, continues with syscalls of subsequent recording,
-       analogous behaviour for end of data_type."""
+       analogous behaviour for end of data_type.
+       If end of recording/datatype is reached stop variable is set so the current batch will be closed."""
 
     try:
         next_syscall = next(syscalls_of_current_recording)
+        stop = False
 
     except StopIteration:
         try:
             syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
             next_syscall = next(syscalls_of_current_recording)
+            stop = True
 
         except StopIteration:
             try:
                 recordings_of_current_type = iter(next(data_type_iterator))
                 syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
                 next_syscall = next(syscalls_of_current_recording)
+                stop = True
 
             except StopIteration:
                 next_syscall = None
 
-    return next_syscall
+    return next_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop
 
 
 def send_batch_to_kafka(syscall_batch):
@@ -50,21 +54,13 @@ def send_batch_to_kafka(syscall_batch):
         p.flush()
 
 
-def print_syscalls(syscall_batch, counter):
-    for syscall in syscall_batch:
-        print(syscall)
-        counter += 1
-    return counter
-
-
 if __name__ == '__main__':
 
-    """configs = {"bootstrap.servers": "broker:9092"}
-    p = Producer(configs)"""
+    configs = {"bootstrap.servers": "broker:9092"}
+    p = Producer(configs)
 
     # loading data
-    #data_base_path = "/DS"
-    data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
+    data_base_path = "/DS"
     # scenario_names = os.listdir(data_base_path)
     scenario_name = "CVE-2017-7529"
     scenario_path_example = os.path.join(data_base_path, scenario_name)
@@ -89,15 +85,23 @@ if __name__ == '__main__':
 
         # appending syscall batch list if its timestamp is within time interval
         while timestamp_current_syscall <= t_delta + timestamp_last_syscall:
-            syscall_batch.append(current_syscall.syscall_line)
+            try:
+                syscall_batch.append(current_syscall.syscall_line)
+            except AttributeError:
+                break
 
-            current_syscall = next_syscall(syscalls_of_current_recording,
-                                           recordings_of_current_type,
-                                           data_type_iterator)
+            current_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop = next_syscall(
+                syscalls_of_current_recording,
+                recordings_of_current_type,
+                data_type_iterator)
+
             if current_syscall is not None:
                 timestamp_current_syscall = current_syscall.timestamp_unix_in_ns()
             else:
                 print("End of Scenario.")
+                break
+
+            if stop is True:
                 break
 
         send_batch_to_kafka(syscall_batch)

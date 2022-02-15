@@ -74,7 +74,7 @@ if __name__ == '__main__':
         while timestamp_current_syscall <= t_delta + timestamp_last_syscall:
             try:
                 syscall_batch.append(current_syscall.syscall_line)
-            except AttributeError as e:
+            except AttributeError:
                 break
 
             current_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop = next_syscall(
