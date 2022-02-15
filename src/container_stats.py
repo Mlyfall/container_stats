@@ -18,46 +18,37 @@ def save_stats(container: docker.models.containers.Container, all_stats=False):
 
         first_status = True
 
-        # counter for shorter running periods for testing code
-        counter_until_break = 0
-        number_stats_testing = 50
-
         if all_stats is False:
             for stat in tqdm(container.stats(decode=True)):
-                if counter_until_break <= number_stats_testing:
-                    if first_status is True:
-                        try:
-                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                            current_timestamp = time.time()
-                            writer.writerow([transmitted_data, current_timestamp])
-                            old_tx = transmitted_data
-                            counter_until_break += 1
-                            first_status = False
-                        except KeyError:
-                            break
-                    else:
-                        try:
-                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                            current_timestamp = time.time()
-                            counter_until_break += 1
-                            if transmitted_data != old_tx:
-                                writer.writerow([transmitted_data, current_timestamp])
-                        except KeyError:
-                            break
-                else:
-                    break
 
-        if all_stats is True:
-            for stat in tqdm(container.stats(decode=True)):
-                if counter_until_break <= number_stats_testing:
+                if first_status is True:
                     try:
                         transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
                         current_timestamp = time.time()
                         writer.writerow([transmitted_data, current_timestamp])
-                        counter_until_break += 1
+                        old_tx = transmitted_data
+
+                        first_status = False
                     except KeyError:
                         break
                 else:
+                    try:
+                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                        current_timestamp = time.time()
+
+                        if transmitted_data != old_tx:
+                            writer.writerow([transmitted_data, current_timestamp])
+                    except KeyError:
+                        break
+
+        if all_stats is True:
+            for stat in tqdm(container.stats(decode=True)):
+                try:
+                    transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                    current_timestamp = time.time()
+                    writer.writerow([transmitted_data, current_timestamp])
+
+                except KeyError:
                     break
 
     return str(container.name + "_stats.csv")
@@ -88,7 +79,7 @@ if __name__ == '__main__':
 
     # run producer and consumer
     producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
-    producer_entrypoint = "python3 /work/next.py"
+    producer_entrypoint = "python3 /work/next_container.py"
     producer = client.containers.run(detach=True,
                                      image="kafka_client",
                                      network="net_kafka",

@@ -50,16 +50,23 @@ def send_batch_to_kafka(syscall_batch):
         p.flush()
 
 
+def print_syscalls(syscall_batch, counter):
+    for syscall in syscall_batch:
+        print(syscall)
+        counter += 1
+    return counter
+
+
 if __name__ == '__main__':
 
-    configs = {"bootstrap.servers": "broker:9092"}
-    p = Producer(configs)
+    """configs = {"bootstrap.servers": "broker:9092"}
+    p = Producer(configs)"""
 
     # loading data
-    data_base_path = "/DS"
-    # data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
+    #data_base_path = "/DS"
+    data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
     # scenario_names = os.listdir(data_base_path)
-    scenario_name = "CVE-2020-9484"
+    scenario_name = "CVE-2017-7529"
     scenario_path_example = os.path.join(data_base_path, scenario_name)
     dataloader = dataloader_factory(scenario_path_example, direction=Direction.BOTH)
 
@@ -73,6 +80,7 @@ if __name__ == '__main__':
     system_time_start = time.time_ns()
     timestamp_last_syscall = timestamp_current_syscall
 
+    counter = 0
     # generating syscall batches with more realistic timing taking computing time into account
     while True:
         syscall_batch = []
