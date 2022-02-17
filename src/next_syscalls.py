@@ -3,6 +3,7 @@ import time
 from dataloader.dataloader_factory import dataloader_factory
 from dataloader.direction import Direction
 
+"""Script for testing sending process without Kafka/Docker. """
 
 def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data_type_iterator):
     """Returns the next syscall of the recording.
