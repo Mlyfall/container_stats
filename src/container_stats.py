@@ -19,7 +19,7 @@ def save_stats(container: docker.models.containers.Container, all_stats=False):
         first_status = True
 
         if all_stats is False:
-            for stat in tqdm(container.stats(decode=True)):
+            for stat in tqdm(container.stats(decode=True), unit="logs"):
 
                 if first_status is True:
                     try:
@@ -42,7 +42,7 @@ def save_stats(container: docker.models.containers.Container, all_stats=False):
                         break
 
         if all_stats is True:
-            for stat in tqdm(container.stats(decode=True)):
+            for stat in tqdm(container.stats(decode=True), unit="logs"):
                 try:
                     transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
                     current_timestamp = time.time()
@@ -54,20 +54,20 @@ def save_stats(container: docker.models.containers.Container, all_stats=False):
     return str(container.name + "_stats.csv")
 
 
-def calc_average_traffic(file: str):
-    sum_bytes = 0
+def calc_traffic(file: str):
     with open(file, "r") as container_stats:
-        reader = csv.reader(container_stats, delimiter=",")
+        row_strings = container_stats.readlines()
+        # reader = csv.reader(container_stats, delimiter=",")
 
-        for counter, row in enumerate(reader, start=1):
-            if counter == 1:
-                continue
-            else:
-                sum_bytes += int(row[0])
+        final_row = row_strings[-1]
+        counter = len(row_strings)
 
-        average_traffic_per_sec = sum_bytes / counter
-        print(f"average bytes per second : {average_traffic_per_sec}, "
-              f"average MB per second : {average_traffic_per_sec / 1024 ** 2}")
+        total_bytes = int(final_row.split(",")[0])
+        total_mb = total_bytes / 1024 ** 2
+        mb_per_sec = total_mb / counter
+        print(f"total bytes sent: {total_bytes}, "
+              f"total MB sent : {total_mb},"
+              f"MB per second: {mb_per_sec}")
 
 
 if __name__ == '__main__':
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     all_stats = True
     try:
         stats_file = save_stats(producer, all_stats)
-        calc_average_traffic(stats_file)
+        calc_traffic(stats_file)
 
     except docker.errors.APIError:
         print("Docker Server Error: Check if producer is running properly.")

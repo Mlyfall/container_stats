@@ -76,7 +76,6 @@ if __name__ == '__main__':
     system_time_start = time.time_ns()
     timestamp_last_syscall = timestamp_current_syscall
 
-    counter = 0
     # generating syscall batches with more realistic timing taking computing time into account
     while True:
         syscall_batch = []
@@ -88,6 +87,7 @@ if __name__ == '__main__':
             try:
                 syscall_batch.append(current_syscall.syscall_line)
             except AttributeError:
+                print("AttributeError for current_syscall.syscall_line : Something went wrong.")
                 break
 
             current_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop = next_syscall(
