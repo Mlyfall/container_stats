@@ -18,7 +18,7 @@ def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data
     """Returns the next syscall of the recording, the next recording, the next datatype and stop flag.
        If end of recording is reached, continues with syscalls of subsequent recording,
        analogous behaviour for end of data_type.
-       If end of recording/datatype is reached stop variable is set so the current batch will be closed."""
+       If end of recording/datatype is reached stop variable is set True so the current batch will be closed."""
 
     try:
         next_syscall = next(syscalls_of_current_recording)
@@ -47,8 +47,9 @@ def send_batch_to_kafka(syscall_batch):
     """Checks for the batch to be non-empty and sends each syscall to broker."""
 
     if len(syscall_batch) > 0:
+        print("Sending new batch!")
         for syscall in syscall_batch:
-            print(syscall)
+            #print(syscall)
             p.poll(0)
             p.produce("test", syscall.encode("utf-8"), callback=delivery_report)
         p.flush()
@@ -62,7 +63,7 @@ if __name__ == '__main__':
     # loading data
     data_base_path = "/DS"
     # scenario_names = os.listdir(data_base_path)
-    scenario_name = "CVE-2017-7529"
+    scenario_name = "CVE-2020-23839"
     scenario_path_example = os.path.join(data_base_path, scenario_name)
     dataloader = dataloader_factory(scenario_path_example, direction=Direction.BOTH)
 
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     system_time_start = time.time_ns()
     timestamp_last_syscall = timestamp_current_syscall
 
-    # generating syscall batches with more realistic timing taking computing time into account
+    # generating syscall batches with more realistic timing taking computing time of following while loop into account
     while True:
         syscall_batch = []
         system_time_now = time.time_ns()
