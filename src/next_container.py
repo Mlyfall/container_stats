@@ -14,7 +14,7 @@ def delivery_report(err, msg):
         print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
 
-def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data_type_iterator):
+def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, end):
     """Returns the next syscall of the recording, the next recording, the next datatype and stop flag.
        If end of recording is reached, continues with syscalls of subsequent recording,
        analogous behaviour for end of data_type.
@@ -39,8 +39,10 @@ def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data
 
             except StopIteration:
                 next_syscall = None
+                stop = True
+                end = True
 
-    return next_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop
+    return next_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop, end
 
 
 def send_batch_to_kafka(syscall_batch):
@@ -63,7 +65,7 @@ if __name__ == '__main__':
     # loading data
     data_base_path = "/DS"
     # scenario_names = os.listdir(data_base_path)
-    scenario_name = "CVE-2020-23839"
+    scenario_name = "CVE-2017-7529"
     scenario_path_example = os.path.join(data_base_path, scenario_name)
     dataloader = dataloader_factory(scenario_path_example, direction=Direction.BOTH)
 
@@ -74,33 +76,31 @@ if __name__ == '__main__':
     current_syscall = next(syscalls_of_current_recording)
     timestamp_current_syscall = current_syscall.timestamp_unix_in_ns()
 
-    system_time_start = time.time_ns()
+    loopend = time.time_ns()
     timestamp_last_syscall = timestamp_current_syscall
-
+    end = False
     # generating syscall batches with more realistic timing taking computing time of following while loop into account
-    while True:
+    while end is False:
         syscall_batch = []
-        system_time_now = time.time_ns()
-        t_delta = system_time_now - system_time_start
+        loopstart = time.time_ns()
+        jumptime = loopstart - loopend
+        looptime = 0
 
         # appending syscall batch list if its timestamp is within time interval
-        while timestamp_current_syscall <= t_delta + timestamp_last_syscall:
+        while timestamp_current_syscall <= timestamp_last_syscall +  jumptime + looptime:
             try:
                 syscall_batch.append(current_syscall.syscall_line)
             except AttributeError:
                 print("AttributeError for current_syscall.syscall_line : Something went wrong.")
                 break
 
-            current_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop = next_syscall(
+            current_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop, end = next_syscall(
                 syscalls_of_current_recording,
                 recordings_of_current_type,
-                data_type_iterator)
+                data_type_iterator, end)
 
             if current_syscall is not None:
                 timestamp_current_syscall = current_syscall.timestamp_unix_in_ns()
-            else:
-                print("End of Scenario.")
-                break
 
             if stop is True:
                 break
@@ -108,5 +108,6 @@ if __name__ == '__main__':
         send_batch_to_kafka(syscall_batch)
 
         # setting new time variables for new batch loop
-        timestamp_last_syscall = timestamp_current_syscall
-        system_time_start = system_time_now
+        loopend = time.time_ns()
+        looptime = loopend - loopstart
+        timestamp_last_syscall = timestamp_last_syscall + looptime
