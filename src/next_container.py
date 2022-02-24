@@ -66,8 +66,8 @@ if __name__ == '__main__':
     data_base_path = "/DS"
     # scenario_names = os.listdir(data_base_path)
     scenario_name = "CVE-2017-7529"
-    scenario_path_example = os.path.join(data_base_path, scenario_name)
-    dataloader = dataloader_factory(scenario_path_example, direction=Direction.BOTH)
+    scenario_path = os.path.join(data_base_path, scenario_name)
+    dataloader = dataloader_factory(scenario_path, direction=Direction.BOTH)
 
     # getting first syscall of scenario using next()
     data_type_iterator = iter([dataloader.training_data(), dataloader.validation_data(), dataloader.test_data()])
@@ -79,7 +79,10 @@ if __name__ == '__main__':
     loopend = time.time_ns()
     timestamp_last_syscall = timestamp_current_syscall
     end = False
-    # generating syscall batches with more realistic timing taking computing time of following while loop into account
+
+    # generating syscall batches with more realistic timing taking computing time of following while loop into account:
+    # looptime referring to the time interval of the last loop
+    # jumptime referring to the time needed for jumping to the start of the new while loop and creating empty batch
     while end is False:
         syscall_batch = []
         loopstart = time.time_ns()
@@ -87,13 +90,14 @@ if __name__ == '__main__':
         looptime = 0
 
         # appending syscall batch list if its timestamp is within time interval
-        while timestamp_current_syscall <= timestamp_last_syscall +  jumptime + looptime:
+        while timestamp_current_syscall <= timestamp_last_syscall + jumptime + looptime:
             try:
                 syscall_batch.append(current_syscall.syscall_line)
             except AttributeError:
                 print("AttributeError for current_syscall.syscall_line : Something went wrong.")
                 break
 
+            # getting new syscall, opening new recording or datatype if necessary
             current_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop, end = next_syscall(
                 syscalls_of_current_recording,
                 recordings_of_current_type,
@@ -102,12 +106,16 @@ if __name__ == '__main__':
             if current_syscall is not None:
                 timestamp_current_syscall = current_syscall.timestamp_unix_in_ns()
 
+            # stops creating of current batch and leaves while loop
             if stop is True:
                 break
 
+        # sends batch to kafka broker if batch is non-empty
         send_batch_to_kafka(syscall_batch)
 
-        # setting new time variables for new batch loop
+        # stopping looptime and setting new time variable for next loop
         loopend = time.time_ns()
         looptime = loopend - loopstart
         timestamp_last_syscall = timestamp_last_syscall + looptime
+
+    print("End of scenario.")
