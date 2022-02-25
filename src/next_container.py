@@ -49,9 +49,8 @@ def send_batch_to_kafka(syscall_batch):
     """Checks for the batch to be non-empty and sends each syscall to broker."""
 
     if len(syscall_batch) > 0:
-        print("Sending new batch!")
+        print(f"Sending new batch of length {len(syscall_batch)}!")
         for syscall in syscall_batch:
-            #print(syscall)
             p.poll(0)
             p.produce("test", syscall.encode("utf-8"), callback=delivery_report)
         p.flush()
@@ -65,13 +64,15 @@ if __name__ == '__main__':
     # loading data
     data_base_path = "/DS"
     # scenario_names = os.listdir(data_base_path)
-    scenario_name = "CVE-2017-7529"
+    scenario_name = "Bruteforce_CWE-307"
     scenario_path = os.path.join(data_base_path, scenario_name)
     dataloader = dataloader_factory(scenario_path, direction=Direction.BOTH)
 
     # getting first syscall of scenario using next()
     data_type_iterator = iter([dataloader.training_data(), dataloader.validation_data(), dataloader.test_data()])
     recordings_of_current_type = iter(next(data_type_iterator))
+    first_recording = next(recordings_of_current_type)
+    first_recording_name = first_recording.name
     syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
     current_syscall = next(syscalls_of_current_recording)
     timestamp_current_syscall = current_syscall.timestamp_unix_in_ns()
@@ -79,6 +80,7 @@ if __name__ == '__main__':
     loopend = time.time_ns()
     timestamp_last_syscall = timestamp_current_syscall
     end = False
+    print(f"starting with recording {first_recording_name}")
 
     # generating syscall batches with more realistic timing taking computing time of following while loop into account:
     # looptime referring to the time interval of the last loop

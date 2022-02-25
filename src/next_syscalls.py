@@ -17,13 +17,10 @@ def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data
 
     except StopIteration:
         try:
-            next_syscall = None
-            stop = True
-            end = True
-            """syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
+            syscalls_of_current_recording = next(recordings_of_current_type).syscalls()
             print("Opened next recording.")
             next_syscall = next(syscalls_of_current_recording)
-            stop = True"""
+            stop = True
 
         except StopIteration:
             try:
@@ -42,7 +39,8 @@ def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data
 
 
 def write_batch_to_file(syscall_batch):
-    with open("syscalls_of_" + first_recording_name + ".sc" , "a") as file:
+    print(len(syscall_batch))
+    with open("syscalls_of_" + scenario_name + ".sc", "a") as file:
         for syscall in syscall_batch:
             file.write(syscall + "\n")
 
@@ -52,7 +50,7 @@ if __name__ == '__main__':
     # loading data
     data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
     # scenario_names = os.listdir(data_base_path)
-    scenario_name = "CWE-89-SQL-injection"
+    scenario_name = "CVE-2017-7529"
     scenario_path = os.path.join(data_base_path, scenario_name)
     dataloader = dataloader_factory(scenario_path, direction=Direction.BOTH)
 
@@ -69,6 +67,7 @@ if __name__ == '__main__':
     timestamp_last_syscall = timestamp_current_syscall
 
     end = False
+    print(f"starting with recording {first_recording_name}")
 
     # generating syscall batches with more realistic timing taking computing time into account
     while end is False:
@@ -104,4 +103,4 @@ if __name__ == '__main__':
         looptime = loopend - loopstart
         timestamp_last_syscall = timestamp_last_syscall + looptime
 
-    print(f"End of scenario {scenario_name} and its recording {first_recording_name}")
+    print(f"End of scenario {scenario_name}")
