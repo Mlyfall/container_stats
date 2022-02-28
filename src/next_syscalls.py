@@ -45,10 +45,16 @@ def write_batch_to_file(syscall_batch):
             file.write(syscall + "\n")
 
 
+def print_syscalls(syscall_batch):
+    for syscall in syscall_batch:
+        print(syscall)
+
+
 if __name__ == '__main__':
 
     # loading data
-    data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
+    data_base_path = "/home/emmely/Projects/Datensatz"
+    #data_base_path = "/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time"
     # scenario_names = os.listdir(data_base_path)
     scenario_name = "CVE-2017-7529"
     scenario_path = os.path.join(data_base_path, scenario_name)
@@ -69,8 +75,13 @@ if __name__ == '__main__':
     end = False
     print(f"starting with recording {first_recording_name}")
 
+    # define runtime for testing and set timer variables
+    runtime_total = 10
+    time_passed = 0
+    timer_start = time.time()
+
     # generating syscall batches with more realistic timing taking computing time into account
-    while end is False:
+    while end is False and time_passed < runtime_total:
         syscall_batch = []
         loopstart = time.time_ns()
         jumptime = loopstart - loopend
@@ -96,11 +107,20 @@ if __name__ == '__main__':
                 break
 
         if len(syscall_batch) > 0:
-            write_batch_to_file(syscall_batch)
+            # write_batch_to_file(syscall_batch)
+            print_syscalls(syscall_batch)
 
         # setting new time variables for new batch loop
         loopend = time.time_ns()
         looptime = loopend - loopstart
         timestamp_last_syscall = timestamp_last_syscall + looptime
 
-    print(f"End of scenario {scenario_name}")
+        timer_stop = time.time()
+        runtime_seconds = timer_stop - timer_start
+        time_passed += runtime_seconds
+        timer_start = timer_stop
+
+    if end is True:
+        print(f"End of scenario {scenario_name}")
+    else:
+        print(f"Reached defined runtime of {runtime_total} seconds.")
