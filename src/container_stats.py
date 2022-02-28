@@ -18,65 +18,56 @@ def save_stats(container: docker.models.containers.Container, all_stats=False):
 
         first_status = True
 
-        # counter for shorter running periods for testing code
-        counter_until_break = 0
-        number_stats_testing = 50
-
         if all_stats is False:
-            for stat in tqdm(container.stats(decode=True)):
-                if counter_until_break <= number_stats_testing:
-                    if first_status is True:
-                        try:
-                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                            current_timestamp = time.time()
-                            writer.writerow([transmitted_data, current_timestamp])
-                            old_tx = transmitted_data
-                            counter_until_break += 1
-                            first_status = False
-                        except KeyError:
-                            break
-                    else:
-                        try:
-                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                            current_timestamp = time.time()
-                            counter_until_break += 1
-                            if transmitted_data != old_tx:
-                                writer.writerow([transmitted_data, current_timestamp])
-                        except KeyError:
-                            break
-                else:
-                    break
+            for stat in tqdm(container.stats(decode=True), unit="logs"):
 
-        if all_stats is True:
-            for stat in tqdm(container.stats(decode=True)):
-                if counter_until_break <= number_stats_testing:
+                if first_status is True:
                     try:
                         transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
                         current_timestamp = time.time()
                         writer.writerow([transmitted_data, current_timestamp])
-                        counter_until_break += 1
+                        old_tx = transmitted_data
+
+                        first_status = False
                     except KeyError:
                         break
                 else:
+                    try:
+                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                        current_timestamp = time.time()
+
+                        if transmitted_data != old_tx:
+                            writer.writerow([transmitted_data, current_timestamp])
+                    except KeyError:
+                        break
+
+        if all_stats is True:
+            for stat in tqdm(container.stats(decode=True), unit="logs"):
+                try:
+                    transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                    current_timestamp = time.time()
+                    writer.writerow([transmitted_data, current_timestamp])
+
+                except KeyError:
                     break
 
     return str(container.name + "_stats.csv")
 
 
-def calc_average_traffic(file: str):
-    sum_bytes = 0
+def calc_traffic(file: str):
     with open(file, "r") as container_stats:
-        reader = csv.reader(container_stats, delimiter=",")
+        row_strings = container_stats.readlines()
+        # reader = csv.reader(container_stats, delimiter=",")
 
-        for counter, row in enumerate(reader, start=1):
-            if counter == 1:
-                continue
-            else:
-                sum_bytes += int(row[0])
+        final_row = row_strings[-1]
+        counter = len(row_strings)
 
-        average_traffic_per_sec = sum_bytes / counter
-        print(f"average bytes per second : {average_traffic_per_sec}, "
-              f"average MB per second : {average_traffic_per_sec / 1024 ** 2}")
+        total_bytes = int(final_row.split(",")[0])
+        total_mb = total_bytes / 1024 ** 2
+        mb_per_sec = total_mb / counter
+        print(f"total bytes sent: {total_bytes}, "
+              f"total MB sent : {total_mb},"
+              f"MB per second: {mb_per_sec}")
 
 
 if __name__ == '__main__':
@@ -88,7 +79,7 @@ if __name__ == '__main__':
 
     # run producer and consumer
     producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
-    producer_entrypoint = "python3 /work/next.py"
+    producer_entrypoint = "python3 /work/next_container.py"
     producer = client.containers.run(detach=True,
                                      image="kafka_client",
                                      network="net_kafka",
@@ -112,7 +103,7 @@ if __name__ == '__main__':
     all_stats = True
     try:
         stats_file = save_stats(producer, all_stats)
-        calc_average_traffic(stats_file)
+        calc_traffic(stats_file)
 
     except docker.errors.APIError:
         print("Docker Server Error: Check if producer is running properly.")
