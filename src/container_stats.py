@@ -11,7 +11,7 @@ from tqdm import tqdm
         Make sure broker and zookeeper containers are running."""
 
 
-def save_stats(container: docker.models.containers.Container, all_stats=False):
+def save_stats(container: docker.models.containers.Container, final_time, all_stats=False):
     with open(str(container.name) + "_stats.csv", "w") as container_stats:
         writer = csv.writer(container_stats)
         writer.writerow(["transmitted data in bytes", "timestamp"])
@@ -42,14 +42,17 @@ def save_stats(container: docker.models.containers.Container, all_stats=False):
                         break
 
         if all_stats is True:
-            for stat in tqdm(container.stats(decode=True), unit="logs"):
-                try:
-                    transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                    current_timestamp = time.time()
-                    writer.writerow([transmitted_data, current_timestamp])
+            while time.time() < final_time:
+                for stat in tqdm(container.stats(decode=True), unit="logs"):
+                    try:
+                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                        current_timestamp = time.time()
+                        writer.writerow([transmitted_data, current_timestamp])
 
-                except KeyError:
-                    break
+                    except KeyError:
+                        print("KeyError in stats.")
+                        break
+            print(f"Reached defined runtime.")
 
     return str(container.name + "_stats.csv")
 
@@ -78,7 +81,8 @@ if __name__ == '__main__':
     # kafka_client_image = client.images.build(dockerfile="/home/emmely/PycharmProjects/test/Dockerfile", tag="kafka_client") ????
 
     # run producer and consumer
-    producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
+    #producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
+    producer_volume_database = ["/home/emmely/Projects/Datensatz/:/DS/:ro"]
     producer_entrypoint = "python3 /work/next_container.py"
     producer = client.containers.run(detach=True,
                                      image="kafka_client",
@@ -99,10 +103,16 @@ if __name__ == '__main__':
         print(f"{container.name} : {container.status}")
 
     # saving producer stats and calculating average
+
+    # setting timer
+    runtime_total = 60
+    timer_start = time.time()
+    final_time = runtime_total + timer_start
+
     # if all stats is set true, every status is written to csv even if tx_bytes value didn't change from previous status
     all_stats = True
     try:
-        stats_file = save_stats(producer, all_stats)
+        stats_file = save_stats(producer, final_time, all_stats)
         calc_traffic(stats_file)
 
     except docker.errors.APIError:
