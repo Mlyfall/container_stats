@@ -88,7 +88,7 @@ if __name__ == '__main__':
     # run producer and consumer
     producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
     # producer_volume_database = ["/home/emmely/Projects/Datensatz/:/DS/:ro"]
-    producer_entrypoint = "python3 /work/next_container.py"
+    producer_entrypoint = "python3 /work/next_producer.py"
     producer = client.containers.run(detach=True,
                                      image="kafka_client",
                                      network="net_kafka",
@@ -118,12 +118,14 @@ if __name__ == '__main__':
     all_stats = True
     try:
         stats_file = save_stats(producer, final_time, all_stats)
-
     except docker.errors.APIError:
         print("Docker Server Error: Check if producer is running properly.")
 
-    scenario_result = calc_traffic(stats_file)
+    try:
+        scenario_result = calc_traffic(stats_file)
+    except Exception:
+        print("Stats file not accessible.")
 
     with open("overview_scenario_stats.csv", "a") as overview:
         writer = csv.writer(overview)
-        writer.writerow([" ", float(scenario_result[0]) , float(scenario_result[1]) , float(scenario_result[2])])
+        writer.writerow([" ", float(scenario_result[0]), float(scenario_result[1]), float(scenario_result[2])])

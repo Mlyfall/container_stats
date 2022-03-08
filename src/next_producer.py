@@ -45,7 +45,7 @@ def next_syscall(syscalls_of_current_recording, recordings_of_current_type, data
     return next_syscall, syscalls_of_current_recording, recordings_of_current_type, data_type_iterator, stop, end
 
 
-def send_batch_to_kafka(syscall_batch):
+def send_batch_to_kafka(syscall_batch:list):
     """Checks for the batch to be non-empty and sends each syscall to broker."""
 
     if len(syscall_batch) > 0:
