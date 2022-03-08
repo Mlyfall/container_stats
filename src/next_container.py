@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # loading data
     data_base_path = "/DS"
     # scenario_names = os.listdir(data_base_path)
-    scenario_name = "Bruteforce_CWE-307"
+    scenario_name = "Juice-Shop"
     scenario_path = os.path.join(data_base_path, scenario_name)
     dataloader = dataloader_factory(scenario_path, direction=Direction.BOTH)
 

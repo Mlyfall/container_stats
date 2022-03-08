@@ -17,33 +17,35 @@ def save_stats(container: docker.models.containers.Container, final_time, all_st
         writer.writerow(["transmitted data in bytes", "timestamp"])
 
         first_status = True
-
         if all_stats is False:
             for stat in tqdm(container.stats(decode=True), unit="logs"):
-
-                if first_status is True:
-                    try:
-                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                        current_timestamp = time.time()
-                        writer.writerow([transmitted_data, current_timestamp])
-                        old_tx = transmitted_data
-
-                        first_status = False
-                    except KeyError:
-                        break
-                else:
-                    try:
-                        transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
-                        current_timestamp = time.time()
-
-                        if transmitted_data != old_tx:
+                if time.time() < final_time:
+                    if first_status is True:
+                        try:
+                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                            current_timestamp = time.time()
                             writer.writerow([transmitted_data, current_timestamp])
-                    except KeyError:
-                        break
+                            old_tx = transmitted_data
+
+                            first_status = False
+                        except KeyError:
+                            break
+                    else:
+                        try:
+                            transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
+                            current_timestamp = time.time()
+
+                            if transmitted_data != old_tx:
+                                writer.writerow([transmitted_data, current_timestamp])
+                        except KeyError:
+                            break
+                else:
+                    print("Reached defined runtime.")
+                    break
 
         if all_stats is True:
-            while time.time() < final_time:
-                for stat in tqdm(container.stats(decode=True), unit="logs"):
+            for stat in tqdm(container.stats(decode=True), unit="logs"):
+                if time.time() < final_time:
                     try:
                         transmitted_data = stat["networks"]["eth0"]["tx_bytes"]
                         current_timestamp = time.time()
@@ -52,7 +54,9 @@ def save_stats(container: docker.models.containers.Container, final_time, all_st
                     except KeyError:
                         print("KeyError in stats.")
                         break
-            print(f"Reached defined runtime.")
+                else:
+                    print("Reached defined runtime.")
+                    break
 
     return str(container.name + "_stats.csv")
 
@@ -60,17 +64,18 @@ def save_stats(container: docker.models.containers.Container, final_time, all_st
 def calc_traffic(file: str):
     with open(file, "r") as container_stats:
         row_strings = container_stats.readlines()
-        # reader = csv.reader(container_stats, delimiter=",")
 
         final_row = row_strings[-1]
-        counter = len(row_strings)
+        counter = len(row_strings) - 1
 
         total_bytes = int(final_row.split(",")[0])
-        total_mb = total_bytes / 1024 ** 2
-        mb_per_sec = total_mb / counter
-        print(f"total bytes sent: {total_bytes}, "
-              f"total MB sent : {total_mb},"
-              f"MB per second: {mb_per_sec}")
+        total_kb = total_bytes * 0.001
+        kb_per_sec = total_kb / counter
+        print(f"total bytes sent in {counter} seconds: {total_bytes},"
+              f"total KB sent : {total_kb}, "
+              f"KB per second: {kb_per_sec}")
+
+    return total_kb, counter, kb_per_sec
 
 
 if __name__ == '__main__':
@@ -81,8 +86,8 @@ if __name__ == '__main__':
     # kafka_client_image = client.images.build(dockerfile="/home/emmely/PycharmProjects/test/Dockerfile", tag="kafka_client") ????
 
     # run producer and consumer
-    #producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
-    producer_volume_database = ["/home/emmely/Projects/Datensatz/:/DS/:ro"]
+    producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
+    # producer_volume_database = ["/home/emmely/Projects/Datensatz/:/DS/:ro"]
     producer_entrypoint = "python3 /work/next_container.py"
     producer = client.containers.run(detach=True,
                                      image="kafka_client",
@@ -105,15 +110,20 @@ if __name__ == '__main__':
     # saving producer stats and calculating average
 
     # setting timer
-    runtime_total = 60
+    runtime_total_seconds = 300
     timer_start = time.time()
-    final_time = runtime_total + timer_start
+    final_time = timer_start + runtime_total_seconds
 
     # if all stats is set true, every status is written to csv even if tx_bytes value didn't change from previous status
     all_stats = True
     try:
         stats_file = save_stats(producer, final_time, all_stats)
-        calc_traffic(stats_file)
 
     except docker.errors.APIError:
         print("Docker Server Error: Check if producer is running properly.")
+
+    scenario_result = calc_traffic(stats_file)
+
+    with open("overview_scenario_stats.csv", "a") as overview:
+        writer = csv.writer(overview)
+        writer.writerow([" ", float(scenario_result[0]) , float(scenario_result[1]) , float(scenario_result[2])])
