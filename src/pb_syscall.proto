@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+package lids;
+
+message Syscall {
+    required int64 timestamp = 1;
+
+    required int32 user_id = 2;
+
+    required int32 process_id = 3;
+
+    required string process_name = 4;
+
+    required int32 thread_id = 5;
+
+    required string syscall_name = 6;
+
+    required string direction = 7;
+
+    optional string params_begin = 8;
+
+}
+
+message SyscallBatch {
+    repeated Syscall syscall = 1;
+}
