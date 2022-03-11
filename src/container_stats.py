@@ -88,14 +88,14 @@ if __name__ == '__main__':
     # run producer and consumer
     producer_volume_database = ["/home/emmely/PycharmProjects/LID-DS-2021-fixed-exploit-time/:/DS/:ro"]
     # producer_volume_database = ["/home/emmely/Projects/Datensatz/:/DS/:ro"]
-    producer_entrypoint = "python3 /work/pb_producer_new.py"
+    producer_entrypoint = "python3 /work/pb_next_producer.py"
     producer = client.containers.run(detach=True,
                                      image="kafka_client",
                                      network="net_kafka",
                                      name="producer", volumes=producer_volume_database,
                                      entrypoint=producer_entrypoint)
 
-    consumer_entrypoint = "python3 /work/pb_consumer_new.py"
+    consumer_entrypoint = "python3 /work/pb_consumer.py"
     consumer = client.containers.run(detach=True,
                                      image="kafka_client",
                                      network="net_kafka",
