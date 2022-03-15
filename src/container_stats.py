@@ -2,6 +2,7 @@ import docker
 import time
 import csv
 from tqdm import tqdm
+from urllib3.connectionpool import xrange
 
 """This script 
         runs kafka producer and consumer container from existing kafka_client image (see Dockerfile)
@@ -107,7 +108,12 @@ if __name__ == '__main__':
     for container in setup:
         print(f"{container.name} : {container.status}")
 
-    # saving producer stats and calculating average
+    # checking first logs of container
+    starting_logs_producer = [x for _, x in zip(xrange(3), producer.logs(stream=True))]
+    for log in starting_logs_producer:
+        print(log.decode('UTF-8'))
+
+    scenario = starting_logs_producer[1].decode('UTF-8').split(" ")[1].split("/")[2]
 
     # setting timer
     runtime_total_seconds = 300
@@ -121,6 +127,7 @@ if __name__ == '__main__':
     except docker.errors.APIError:
         print("Docker Server Error: Check if producer is running properly.")
 
+    # calculate average traffic from csv
     try:
         scenario_result = calc_traffic(stats_file)
     except Exception:
@@ -128,4 +135,4 @@ if __name__ == '__main__':
 
     with open("../overview_scenario_stats.csv", "a") as overview:
         writer = csv.writer(overview)
-        writer.writerow([" ", float(scenario_result[0]), float(scenario_result[1]), float(scenario_result[2])])
+        writer.writerow([scenario.strip("\n").replace('"', ''), float(scenario_result[0]), int(scenario_result[1]), float(scenario_result[2])])

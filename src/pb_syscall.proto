@@ -5,7 +5,7 @@ package lids;
 message Syscall {
     required int64 timestamp = 1;
 
-    required int32 user_id = 2;
+    required int64 user_id = 2;
 
     required int32 process_id = 3;
 

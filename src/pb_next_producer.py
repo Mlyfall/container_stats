@@ -56,14 +56,14 @@ def send_batch_to_kafka(syscall_batch:list):
             p.poll(0)
             # construct protobuf syscall object
             pb_syscall = pb_syscall_pb2.Syscall()
-            pb_syscall.timestamp = syscall.split(" ")[0]
-            pb_syscall.user_id = syscall.split(" ")[1]
-            pb_syscall.process_id = syscall.split(" ")[2]
-            pb_syscall.process_name = syscall.split(" ")[3]
-            pb_syscall.thread_id = syscall.split(" ")[4]
-            pb_syscall.syscall_name = syscall.split(" ")[5]
-            pb_syscall.direction = syscall.split(" ")[6]
-            pb_syscall.params_begin = " ".join(syscall.split(" ")[7:])
+            pb_syscall.timestamp = int(syscall.split(" ")[0])
+            pb_syscall.user_id = int(syscall.split(" ")[1])
+            pb_syscall.process_id = int(syscall.split(" ")[2])
+            pb_syscall.process_name = str(syscall.split(" ")[3])
+            pb_syscall.thread_id = int(syscall.split(" ")[4])
+            pb_syscall.syscall_name = str(syscall.split(" ")[5])
+            pb_syscall.direction = str(syscall.split(" ")[6])
+            pb_syscall.params_begin = str(" ".join(syscall.split(" ")[7:]))
 
             # send protobuf message with syscall object
             p.produce("test", pb_syscall.SerializeToString(), callback=delivery_report)
@@ -75,10 +75,10 @@ if __name__ == '__main__':
     configs = {"bootstrap.servers": "broker:9092"}
     p = Producer(configs)
 
-    # loading data
+    # loading data: run kill_and_rebuild_image.sh after changing input
     data_base_path = "/DS"
     # scenario_names = os.listdir(data_base_path)
-    scenario_name = "Juice-Shop"
+    scenario_name = "PHP_CWE-434"
     scenario_path = os.path.join(data_base_path, scenario_name)
     dataloader = dataloader_factory(scenario_path, direction=Direction.BOTH)
 
