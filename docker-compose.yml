@@ -30,6 +30,7 @@ services:
 
   schemaregistry:
     image: confluentinc/cp-schema-registry:5.1.2
+    container_name: schemaregistry
     restart: always
     depends_on:
       - zookeeper
